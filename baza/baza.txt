@@ -1,0 +1,121 @@
+-- ============================================
+-- BAZA: ZADUZIVANJE OPREME
+-- ============================================
+
+-- 1. TABELA ZADUŽENJE (CELINA)
+CREATE TABLE zaduzenje (
+    id_zaduzenja INT AUTO_INCREMENT PRIMARY KEY,
+    broj_zapisnika VARCHAR(20) NOT NULL UNIQUE,
+    datum DATE NOT NULL,
+    zaposleni VARCHAR(100) NOT NULL,
+    odeljenje VARCHAR(100) NOT NULL,
+    napomena VARCHAR(500)
+);
+
+
+-- 2. TABELA OPREMA (ŠIFARNIK)
+CREATE TABLE oprema (
+    id_opreme INT AUTO_INCREMENT PRIMARY KEY,
+    naziv VARCHAR(100) NOT NULL UNIQUE,
+    proizvodjac VARCHAR(100) NOT NULL
+);
+
+
+-- 3. TABELA STAVKA ZADUŽENJA (DEO)
+CREATE TABLE stavka_zaduzenja (
+    id_stavke INT AUTO_INCREMENT PRIMARY KEY,
+    id_zaduzenja INT NOT NULL,
+    id_opreme INT NOT NULL,
+    kolicina INT NOT NULL,
+    stanje VARCHAR(50) NOT NULL,
+    napomena VARCHAR(500),
+
+    FOREIGN KEY (id_zaduzenja)
+        REFERENCES zaduzenje(id_zaduzenja)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (id_opreme)
+        REFERENCES oprema(id_opreme)
+);
+
+
+-- 4. TABELA KORISNIK
+CREATE TABLE korisnik (
+    id_korisnika INT AUTO_INCREMENT PRIMARY KEY,
+    korisnicko_ime VARCHAR(50) NOT NULL UNIQUE,
+    lozinka VARCHAR(255) NOT NULL
+);
+
+
+---------------------------------------------------------------
+
+
+
+-- ============================================
+-- POČETNI PODACI
+-- ============================================
+
+-- OPREMA
+INSERT INTO oprema (naziv, proizvodjac) VALUES
+('Laptop', 'Lenovo'),
+('Monitor', 'Dell'),
+('Tastatura', 'Logitech'),
+('Miš', 'Logitech'),
+('Slušalice', 'JBL'),
+('Mobilni telefon', 'Samsung'),
+('Tablet', 'Samsung'),
+('Štampač', 'HP');
+
+
+-- KORISNIK ZA PRIJAVU
+INSERT INTO korisnik (korisnicko_ime, lozinka) VALUES
+('admin', 'Admin123!');
+
+
+
+----------------------------------------------------------
+
+
+CREATE VIEW pregled_zaduzenja AS
+SELECT
+    z.id_zaduzenja,
+    z.broj_zapisnika,
+    z.datum,
+    z.zaposleni,
+    z.odeljenje,
+    o.naziv AS oprema,
+    o.proizvodjac,
+    s.kolicina,
+    s.stanje,
+    s.napomena AS napomena_stavke
+FROM zaduzenje z
+INNER JOIN stavka_zaduzenja s
+    ON z.id_zaduzenja = s.id_zaduzenja
+INNER JOIN oprema o
+    ON s.id_opreme = o.id_opreme;
+
+
+-------------------------------------------------------------
+
+
+DELIMITER //
+
+CREATE PROCEDURE prikazi_sva_zaduzenja()
+BEGIN
+    SELECT
+        z.id_zaduzenja,
+        z.broj_zapisnika,
+        z.datum,
+        z.zaposleni,
+        z.odeljenje,
+        z.napomena
+    FROM zaduzenje z
+    ORDER BY z.datum DESC;
+END //
+
+DELIMITER ;
+
+
+-------------------------------------------------------------------
+
+
