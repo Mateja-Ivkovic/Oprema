@@ -1,62 +1,154 @@
-﻿
-<?php
-session_start();
+﻿<?php
 
-if (!isset($_SESSION["korisnik"])) {
-    header("Location: ../index.php");
-    exit;
-}
+require_once "../klase/Sesija.php";
+require_once "../klase/ZaduzenjeKontroler.php";
 
-require_once "../klase/Zaduzenje.php";
+$sesija =
+    new Sesija();
 
-$zaduzenje = new Zaduzenje();
-$rezultat = $zaduzenje->prikaziIzPogleda();
+$sesija->proveriPrijavu(
+    "../index.php"
+);
+
+$kontroler =
+    new ZaduzenjeKontroler();
+
+$zaduzenja =
+    $kontroler->prikaziIzPogleda();
+
 ?>
 
 <!DOCTYPE html>
 <html lang="sr">
+
 <head>
+
     <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
     <title>Pregled stavki</title>
-    <link rel="stylesheet" href="../css/stil.css">
+
+    <link rel="stylesheet"
+          href="../css/stil.css">
+
 </head>
 
 <body>
 
 <?php require_once "zaglavlje.php"; ?>
 
-<div class="sadrzaj">
-    <h2>Pregled stavki zaduženja</h2>
+<main class="sadrzaj">
+
+    <h2>
+        Pregled stavki
+    </h2>
 
     <table class="tabela">
-        <tr>
-            <th>Broj zapisnika</th>
-            <th>Datum</th>
-            <th>Zaposleni</th>
-            <th>Odeljenje</th>
-            <th>Oprema</th>
-            <th>Proizvođač</th>
-            <th>Količina</th>
-            <th>Stanje</th>
-            <th>Napomena</th>
-        </tr>
 
-        <?php while ($red = $rezultat->fetch_assoc()) { ?>
+        <thead>
+
             <tr>
-                <td><?php echo htmlspecialchars($red["broj_zapisnika"]); ?></td>
-                <td><?php echo htmlspecialchars($red["datum"]); ?></td>
-                <td><?php echo htmlspecialchars($red["zaposleni"]); ?></td>
-                <td><?php echo htmlspecialchars($red["odeljenje"]); ?></td>
-                <td><?php echo htmlspecialchars($red["oprema"]); ?></td>
-                <td><?php echo htmlspecialchars($red["proizvodjac"]); ?></td>
-                <td><?php echo htmlspecialchars($red["kolicina"]); ?></td>
-                <td><?php echo htmlspecialchars($red["stanje"]); ?></td>
-                <td><?php echo htmlspecialchars($red["napomena_stavke"]); ?></td>
+                <th>Broj zapisnika</th>
+                <th>Datum</th>
+                <th>Zaposleni</th>
+                <th>Odeljenje</th>
+                <th>Oprema</th>
+                <th>Proizvođač</th>
+                <th>Količina</th>
+                <th>Stanje</th>
+                <th>Napomena</th>
             </tr>
-        <?php } ?>
+
+        </thead>
+
+        <tbody>
+
+        <?php foreach ($zaduzenja as $zaduzenje): ?>
+
+            <?php
+
+            $stavke =
+                $zaduzenje->getStavke();
+
+            foreach (
+                $stavke as $stavka
+            ):
+
+                $oprema =
+                    $stavka->getOprema();
+
+            ?>
+
+                <tr>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $zaduzenje->getBrojZapisnika()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $zaduzenje->getDatum()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $zaduzenje->getZaposleni()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $zaduzenje->getOdeljenje()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $oprema->getNaziv()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $oprema->getProizvodjac()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $stavka->getKolicina()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $stavka->getStanje()
+                        ); ?>
+                    </td>
+
+                    <td>
+                        <?php echo htmlspecialchars(
+                            $stavka->getNapomena()
+                        ); ?>
+                    </td>
+
+                </tr>
+
+            <?php endforeach; ?>
+
+        <?php endforeach; ?>
+
+        </tbody>
+
     </table>
-</div>
+
+</main>
 
 </body>
-</html>
 
+</html>

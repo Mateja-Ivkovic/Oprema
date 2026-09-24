@@ -9,12 +9,12 @@ class Oprema extends BaznaTabela
     private $proizvodjac;
 
     public function __construct($konekcija = null)
-{
-    parent::__construct(
-        "oprema",
-        $konekcija
-    );
-}
+    {
+        parent::__construct(
+            "oprema",
+            $konekcija
+        );
+    }
 
     public function getIdOpreme()
     {
@@ -45,6 +45,13 @@ class Oprema extends BaznaTabela
     {
         $this->proizvodjac = $proizvodjac;
     }
-}
 
-?>
+    public function toArray()
+    {
+        return array(
+            "id_opreme" => $this->idOpreme,
+            "naziv" => $this->naziv,
+            "proizvodjac" => $this->proizvodjac
+        );
+    }
+}

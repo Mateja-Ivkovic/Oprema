@@ -1,30 +1,73 @@
 ﻿<?php
 
-session_start();
+require_once "../klase/Sesija.php";
+require_once "../klase/ZaduzenjeKontroler.php";
 
-if (!isset($_SESSION["korisnik"])) {
-    header("Location: ../index.php");
+
+$sesija = new Sesija();
+
+$sesija->proveriPrijavu(
+    "../index.php"
+);
+
+
+// ---------------------------------------------------------
+// ID ZADUŽENJA
+// ---------------------------------------------------------
+
+if (
+    !isset($_GET["id"]) ||
+    !is_numeric($_GET["id"])
+) {
+
+    header(
+        "Location: pregledZaduzenja.php"
+    );
+
     exit;
 }
 
-require_once "../klase/Zaduzenje.php";
 
-if (!isset($_GET["id"]) || !is_numeric($_GET["id"])) {
-    header("Location: pregledZaduzenja.php");
+$idZaduzenja =
+    (int) $_GET["id"];
+
+
+// ---------------------------------------------------------
+// KONTROLER
+// ---------------------------------------------------------
+
+$kontroler =
+    new ZaduzenjeKontroler();
+
+
+// ---------------------------------------------------------
+// ZADUŽENJE
+// ---------------------------------------------------------
+
+$zaduzenje =
+    $kontroler->pronadjiPoId(
+        $idZaduzenja
+    );
+
+
+if (!$zaduzenje) {
+
+    header(
+        "Location: pregledZaduzenja.php"
+    );
+
     exit;
 }
 
-$idZaduzenja = (int) $_GET["id"];
 
-$zaduzenje = new Zaduzenje();
+// ---------------------------------------------------------
+// STAVKE
+// ---------------------------------------------------------
 
-$podaci = $zaduzenje->pronadjiPoId($idZaduzenja);
-
-if (!$podaci) {
-    die("Zaduženje ne postoji.");
-}
-
-$stavke = $zaduzenje->pronadjiStavke($idZaduzenja);
+$stavke =
+    $kontroler->pronadjiStavke(
+        $idZaduzenja
+    );
 
 ?>
 
@@ -33,120 +76,193 @@ $stavke = $zaduzenje->pronadjiStavke($idZaduzenja);
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    <title>Detalji zaduženja</title>
+<title>Detalji zaduženja</title>
 
-    <link rel="stylesheet" href="../css/stil.css">
+<link rel="stylesheet"
+      href="../css/stil.css">
 
 </head>
 
 <body>
 
-    <?php require_once "zaglavlje.php"; ?>
-
-    <main class="sadrzaj">
-
-        <h2>Detalji zaduženja</h2>
-
-        <div class="detalji">
-
-            <p>
-                <strong>Broj zapisnika:</strong>
-                <?php echo htmlspecialchars($podaci["broj_zapisnika"]); ?>
-            </p>
-
-            <p>
-                <strong>Datum:</strong>
-                <?php echo htmlspecialchars($podaci["datum"]); ?>
-            </p>
-
-            <p>
-                <strong>Zaposleni:</strong>
-                <?php echo htmlspecialchars($podaci["zaposleni"]); ?>
-            </p>
-
-            <p>
-                <strong>Odeljenje:</strong>
-                <?php echo htmlspecialchars($podaci["odeljenje"]); ?>
-            </p>
-
-            <p>
-                <strong>Napomena:</strong>
-                <?php echo htmlspecialchars($podaci["napomena"]); ?>
-            </p>
-
-        </div>
+<?php require_once "zaglavlje.php"; ?>
 
 
-        <h3>Zadužena oprema</h3>
+<main class="sadrzaj">
 
-        <table class="tabela">
-
-            <thead>
-
-                <tr>
-
-                    <th>Oprema</th>
-                    <th>Proizvođač</th>
-                    <th>Količina</th>
-                    <th>Stanje</th>
-                    <th>Napomena</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                <?php while ($stavka = $stavke->fetch_assoc()): ?>
-
-                    <tr>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["naziv"]); ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["proizvodjac"]); ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["kolicina"]); ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["stanje"]); ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["napomena"]); ?>
-                        </td>
-
-                    </tr>
-
-                <?php endwhile; ?>
-
-            </tbody>
-
-        </table>
+    <h2>
+        Detalji zaduženja
+    </h2>
 
 
-        <br>
+    <p>
+        <strong>Broj zapisnika:</strong>
 
-        <a href="pregledZaduzenja.php">
-            ← Nazad na pregled
-        </a>
+        <?php
+        echo htmlspecialchars(
+            $zaduzenje->getBrojZapisnika()
+        );
+        ?>
+    </p>
 
-        <a href="../stampa/zapisnik.php?id=<?php echo $idZaduzenja; ?>"
-   class="dugme"
-   target="_blank">
-    Štampaj zapisnik
-</a>
 
-    </main>
+    <p>
+        <strong>Datum:</strong>
+
+        <?php
+        echo htmlspecialchars(
+            $zaduzenje->getDatum()
+        );
+        ?>
+    </p>
+
+
+    <p>
+        <strong>Zaposleni:</strong>
+
+        <?php
+        echo htmlspecialchars(
+            $zaduzenje->getZaposleni()
+        );
+        ?>
+    </p>
+
+
+    <p>
+        <strong>Odeljenje:</strong>
+
+        <?php
+        echo htmlspecialchars(
+            $zaduzenje->getOdeljenje()
+        );
+        ?>
+    </p>
+
+
+    <p>
+        <strong>Napomena:</strong>
+
+        <?php
+        echo htmlspecialchars(
+            $zaduzenje->getNapomena()
+        );
+        ?>
+    </p>
+
+
+    <h3>
+        Oprema
+    </h3>
+
+
+    <table class="tabela">
+
+        <thead>
+
+            <tr>
+
+                <th>Oprema</th>
+                <th>Proizvođač</th>
+                <th>Količina</th>
+                <th>Stanje</th>
+                <th>Napomena</th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+        <?php foreach ($stavke as $stavka): ?>
+
+            <?php
+            $oprema =
+                $stavka->getOprema();
+            ?>
+
+            <tr>
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $oprema->getNaziv()
+                    );
+                    ?>
+                </td>
+
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $oprema->getProizvodjac()
+                    );
+                    ?>
+                </td>
+
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $stavka->getKolicina()
+                    );
+                    ?>
+                </td>
+
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $stavka->getStanje()
+                    );
+                    ?>
+                </td>
+
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $stavka->getNapomena()
+                    );
+                    ?>
+                </td>
+
+            </tr>
+
+        <?php endforeach; ?>
+
+        </tbody>
+
+    </table>
+
+
+    <br>
+
+
+    <a
+        href="pregledZaduzenja.php"
+        class="dugme"
+    >
+        Nazad
+    </a>
+
+
+    <a
+        href="../stampa/zapisnik.php?id=<?php
+            echo $idZaduzenja;
+        ?>"
+        class="dugme"
+        target="_blank"
+    >
+        Štampaj zapisnik
+    </a>
+
+</main>
 
 </body>
 

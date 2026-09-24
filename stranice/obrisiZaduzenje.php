@@ -1,36 +1,62 @@
 ﻿<?php
 
-session_start();
+require_once "../klase/Sesija.php";
+require_once "../klase/ZaduzenjeKontroler.php";
 
-if (!isset($_SESSION["korisnik"])) {
-    header("Location: ../index.php");
+
+$sesija = new Sesija();
+
+$sesija->proveriPrijavu(
+    "../index.php"
+);
+
+
+// ---------------------------------------------------------
+// PROVERA ID-A
+// ---------------------------------------------------------
+
+if (
+    !isset($_GET["id"]) ||
+    !is_numeric($_GET["id"])
+) {
+
+    header(
+        "Location: pregledZaduzenja.php"
+    );
+
     exit;
 }
 
-require_once "../klase/Zaduzenje.php";
 
-if (!isset($_GET["id"]) || !is_numeric($_GET["id"])) {
-    header("Location: pregledZaduzenja.php");
-    exit;
+$id =
+    (int) $_GET["id"];
+
+
+try {
+
+    $kontroler =
+        new ZaduzenjeKontroler();
+
+
+    $kontroler->obrisi(
+        $id
+    );
+
+
+} catch (Exception $e) {
+
+    die(
+        "Greška pri brisanju: "
+        .
+        htmlspecialchars(
+            $e->getMessage()
+        )
+    );
 }
 
-$idZaduzenja = (int) $_GET["id"];
 
-$zaduzenje = new Zaduzenje();
+header(
+    "Location: pregledZaduzenja.php"
+);
 
-$konekcija = $zaduzenje->getKonekcija();
-
-$upit = "DELETE FROM zaduzenje WHERE id_zaduzenja = ?";
-
-$stmt = $konekcija->prepare($upit);
-
-$stmt->bind_param("i", $idZaduzenja);
-
-$stmt->execute();
-
-$stmt->close();
-
-header("Location: pregledZaduzenja.php");
 exit;
-
-?>

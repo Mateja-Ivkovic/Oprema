@@ -1,11 +1,14 @@
 ﻿<?php
 
-session_start();
+require_once "../klase/Sesija.php";
 
-session_unset();
-session_destroy();
+$sesija =
+    new Sesija();
 
-header("Location: ../index.php");
+$sesija->odjavi();
+
+header(
+    "Location: ../index.php"
+);
+
 exit;
-
-?>

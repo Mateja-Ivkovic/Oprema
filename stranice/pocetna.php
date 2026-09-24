@@ -1,8 +1,17 @@
 ﻿<?php
 
-session_start();
+require_once "../klase/Sesija.php";
 
 
+$sesija = new Sesija();
+
+$sesija->proveriPrijavu(
+    "../index.php"
+);
+
+
+$korisnik =
+    $sesija->getKorisnik();
 
 ?>
 
@@ -11,67 +20,105 @@ session_start();
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    <title>Početna - Zaduživanje opreme</title>
+<title>
+    Početna stranica
+</title>
 
-    <link rel="stylesheet" href="../css/stil.css">
+<link rel="stylesheet"
+      href="../css/stil.css">
 
 </head>
 
 <body>
 
-    <?php require_once "zaglavlje.php"; ?>
+<?php require_once "zaglavlje.php"; ?>
 
-    <main class="sadrzaj">
 
-        <h2>Početna stranica</h2>
+<main class="sadrzaj">
 
-        <p>
-            Dobrodošli u sistem za evidentiranje zaduživanja
-            službene opreme zaposlenima.
-        </p>
 
-        <p>
-            Prijavljeni korisnik:
-            <strong><?php echo htmlspecialchars($_SESSION["korisnik"]); ?></strong>
-        </p>
+    <h2>
+        Početna stranica
+    </h2>
 
-        <div class="meni-kartice">
 
-            <div class="kartica">
+    <p>
+        Dobrodošli u sistem za
+        zaduživanje službene opreme.
+    </p>
 
-                <h3>Novo zaduženje</h3>
 
-                <p>
-                    Unos novog zapisnika o zaduživanju službene opreme.
-                </p>
+    <p>
 
-                <a href="novoZaduzenje.php">
-                    Unesi zaduženje
-                </a>
+        Prijavljeni korisnik:
 
-            </div>
+        <strong>
 
-            <div class="kartica">
+            <?php
+            echo htmlspecialchars(
+                $korisnik
+            );
+            ?>
 
-                <h3>Pregled zaduženja</h3>
+        </strong>
 
-                <p>
-                    Pregled svih evidentiranih zaduženja.
-                </p>
+    </p>
 
-                <a href="pregledZaduzenja.php">
-                    Pregledaj zaduženja
-                </a>
 
-            </div>
+    <div class="meni-kartice">
+
+
+        <div class="kartica">
+
+            <h3>
+                Novo zaduženje
+            </h3>
+
+            <p>
+                Kreirajte novo zaduženje
+                službene opreme.
+            </p>
+
+            <a
+                href="novoZaduzenje.php"
+                class="dugme"
+            >
+                Novo zaduženje
+            </a>
 
         </div>
 
-    </main>
+
+        <div class="kartica">
+
+            <h3>
+                Pregled zaduženja
+            </h3>
+
+            <p>
+                Pregledajte postojeća
+                zaduženja službene opreme.
+            </p>
+
+            <a
+                href="pregledZaduzenja.php"
+                class="dugme"
+            >
+                Pregled zaduženja
+            </a>
+
+        </div>
+
+
+    </div>
+
+
+</main>
 
 </body>
 

@@ -1,46 +1,31 @@
-﻿```php
-<?php
+﻿<?php
 
 require_once "BaznaKonekcija.php";
-
-
-// =====================================================
-// BAZNA KLASA ZA RAD SA TABELAMA
-// =====================================================
 
 class BaznaTabela extends BaznaKonekcija
 {
     protected $nazivTabele;
 
-
-    // =================================================
-    // KONSTRUKTOR
-    // =================================================
-
     public function __construct(
         $nazivTabele,
         $konekcija = null
     ) {
-
         parent::__construct($konekcija);
 
         $this->nazivTabele = $nazivTabele;
     }
 
-
-    // =================================================
-    // PRONALAŽENJE SVIH ZAPISA IZ TABELE
-    // =================================================
-
     public function pronadjiSve()
     {
-        $upit = "SELECT * FROM " . $this->nazivTabele;
+        $upit =
+            "SELECT * FROM "
+            . $this->nazivTabele;
 
-        $rezultat = $this->konekcija->query($upit);
+        $rezultat =
+            $this->konekcija->query($upit);
 
         if (!$rezultat) {
-
-            die(
+            throw new Exception(
                 "Greška pri izvršavanju upita: "
                 . $this->konekcija->error
             );
@@ -49,20 +34,15 @@ class BaznaTabela extends BaznaKonekcija
         return $rezultat;
     }
 
-
-    // =================================================
-    // IZVRŠAVANJE STORED PROCEDURE
-    // =================================================
-
     public function izvrsiProceduru($nazivProcedure)
     {
-        $rezultat = $this->konekcija->query(
-            "CALL " . $nazivProcedure . "()"
-        );
+        $rezultat =
+            $this->konekcija->query(
+                "CALL " . $nazivProcedure . "()"
+            );
 
         if (!$rezultat) {
-
-            die(
+            throw new Exception(
                 "Greška pri izvršavanju procedure: "
                 . $this->konekcija->error
             );
@@ -71,20 +51,17 @@ class BaznaTabela extends BaznaKonekcija
         return $rezultat;
     }
 
-
-    // =================================================
-    // ČITANJE PODATAKA IZ VIEW-A
-    // =================================================
-
     public function pronadjiIzPogleda($nazivPogleda)
     {
-        $upit = "SELECT * FROM " . $nazivPogleda;
+        $upit =
+            "SELECT * FROM "
+            . $nazivPogleda;
 
-        $rezultat = $this->konekcija->query($upit);
+        $rezultat =
+            $this->konekcija->query($upit);
 
         if (!$rezultat) {
-
-            die(
+            throw new Exception(
                 "Greška pri čitanju pogleda: "
                 . $this->konekcija->error
             );
@@ -93,6 +70,3 @@ class BaznaTabela extends BaznaKonekcija
         return $rezultat;
     }
 }
-
-?>
-```

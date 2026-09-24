@@ -1,56 +1,77 @@
 ﻿<?php
 
-session_start();
-
+require_once "klase/Sesija.php";
 require_once "klase/Korisnik.php";
 
-$poruka = "";
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+$sesija = new Sesija();
 
-    $korisnickoIme = trim($_POST["korisnicko_ime"]);
-    $lozinka = $_POST["lozinka"];
 
-    if ($korisnickoIme == "" || $lozinka == "") {
+$greska = "";
 
-        $poruka = "Morate popuniti sva polja.";
+
+// ---------------------------------------------------------
+// AKO JE KORISNIK VEĆ PRIJAVLJEN
+// ---------------------------------------------------------
+
+if (
+    $sesija->postoji("korisnik")
+) {
+
+    header(
+        "Location: stranice/pocetna.php"
+    );
+
+    exit;
+}
+
+
+// ---------------------------------------------------------
+// PRIJAVA
+// ---------------------------------------------------------
+
+if (
+    $_SERVER["REQUEST_METHOD"] === "POST"
+) {
+
+    $korisnickoIme =
+        trim(
+            $_POST["korisnicko_ime"] ?? ""
+        );
+
+
+    $lozinka =
+        $_POST["lozinka"] ?? "";
+
+
+    $korisnik =
+        new Korisnik();
+
+
+    $podaci =
+        $korisnik->proveriPrijavu(
+            $korisnickoIme,
+            $lozinka
+        );
+
+
+    if ($podaci) {
+
+        $sesija->prijavi(
+            $podaci["korisnicko_ime"]
+        );
+
+
+        header(
+            "Location: stranice/pocetna.php"
+        );
+
+        exit;
 
     } else {
 
-        $korisnik = new Korisnik();
-
-        $upit = "SELECT * FROM korisnik WHERE korisnicko_ime = ?";
-
-        $stmt = $korisnik->getKonekcija()->prepare($upit);
-
-        $stmt->bind_param("s", $korisnickoIme);
-
-        $stmt->execute();
-
-        $rezultat = $stmt->get_result();
-
-        if ($rezultat->num_rows == 1) {
-
-            $podaci = $rezultat->fetch_assoc();
-
-            if ($lozinka === $podaci["lozinka"]) {
-
-                $_SESSION["korisnik"] = $podaci["korisnicko_ime"];
-
-                header("Location: stranice/pocetna.php");
-                exit;
-
-            } else {
-
-                $poruka = "Pogrešna lozinka.";
-            }
-
-        } else {
-
-            $poruka = "Korisnik ne postoji.";
-        }
-
-        $stmt->close();
+        $greska =
+            "Pogrešno korisničko ime ili lozinka.";
     }
 }
 
@@ -61,64 +82,88 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    <title>Prijava - Zaduživanje opreme</title>
+<title>
+    Prijava
+</title>
 
-    <link rel="stylesheet" href="css/stil.css">
+<link rel="stylesheet"
+      href="css/stil.css">
 
 </head>
 
 <body>
 
-    <div class="login-okvir">
 
-        <h1>Zaduživanje službene opreme</h1>
+<main class="sadrzaj">
 
-        <h2>Prijava korisnika</h2>
 
-        <?php if ($poruka != ""): ?>
+    <h2>
+        Prijava
+    </h2>
 
-            <p class="greska">
-                <?php echo htmlspecialchars($poruka); ?>
-            </p>
 
-        <?php endif; ?>
+    <?php if ($greska !== ""): ?>
 
-        <form method="POST" action="">
+        <div class="greska">
 
-            <label for="korisnicko_ime">
-                Korisničko ime:
-            </label>
+            <?php
+            echo htmlspecialchars(
+                $greska
+            );
+            ?>
 
-            <input
-                type="text"
-                id="korisnicko_ime"
-                name="korisnicko_ime"
-                maxlength="50"
-                required
-            >
+        </div>
 
-            <label for="lozinka">
-                Lozinka:
-            </label>
+    <?php endif; ?>
 
-            <input
-                type="password"
-                id="lozinka"
-                name="lozinka"
-                required
-            >
 
-            <button type="submit">
-                Prijavi se
-            </button>
+    <form method="post">
 
-        </form>
 
-    </div>
+        <label for="korisnicko_ime">
+            Korisničko ime
+        </label>
+
+
+        <input
+            type="text"
+            id="korisnicko_ime"
+            name="korisnicko_ime"
+            required
+        >
+
+
+        <label for="lozinka">
+            Lozinka
+        </label>
+
+
+        <input
+            type="password"
+            id="lozinka"
+            name="lozinka"
+            required
+        >
+
+
+        <button
+            type="submit"
+            class="dugme"
+        >
+            Prijavi se
+        </button>
+
+
+    </form>
+
+
+</main>
+
 
 </body>
 

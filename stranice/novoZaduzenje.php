@@ -1,516 +1,110 @@
-﻿```php
-<?php
+﻿<?php
 
-// =====================================================
-// POKRETANJE SESIJE
-// =====================================================
-
-session_start();
+require_once "../klase/Sesija.php";
+require_once "../klase/ZaduzenjeKontroler.php";
 
 
-// =====================================================
-// PROVERA DA LI JE KORISNIK PRIJAVLJEN
-// =====================================================
+$sesija = new Sesija();
 
-if (!isset($_SESSION["korisnik"])) {
-
-    header("Location: ../index.php");
-    exit;
-}
+$sesija->proveriPrijavu(
+    "../index.php"
+);
 
 
-// =====================================================
-// UKLJUČIVANJE POTREBNIH KLASA
-// =====================================================
-
-require_once "../klase/Zaduzenje.php";
-require_once "../klase/StavkaZaduzenja.php";
-require_once "../klase/BaznaTransakcija.php";
-require_once "../klase/Oprema.php";
+$kontroler =
+    new ZaduzenjeKontroler();
 
 
-// =====================================================
-// PROMENLJIVE ZA PORUKE I GREŠKE
-// =====================================================
-
-$poruka = "";
-$greske = array();
+$greska = "";
 
 
-// =====================================================
-// OBRADA FORME NAKON KLIKA NA "SAČUVAJ"
-// =====================================================
+$podaci = array(
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    "broj_zapisnika" => "",
+    "datum" => "",
+    "zaposleni" => "",
+    "odeljenje" => "",
+    "napomena" => ""
 
-    // =================================================
-    // PREUZIMANJE PODATAKA IZ FORME
-    // =================================================
-
-    $brojZapisnika = trim($_POST["broj_zapisnika"] ?? "");
-    $datum = $_POST["datum"] ?? "";
-    $zaposleni = trim($_POST["zaposleni"] ?? "");
-    $odeljenje = trim($_POST["odeljenje"] ?? "");
-    $napomena = trim($_POST["napomena"] ?? "");
+);
 
 
-    // =================================================
-    // VALIDACIJA BROJA ZAPISNIKA
-    // =================================================
-
-    if ($brojZapisnika == "") {
-
-        $greske[] = "Broj zapisnika je obavezan.";
-
-    } elseif (strlen($brojZapisnika) > 20) {
-
-        $greske[] =
-            "Broj zapisnika može imati najviše 20 karaktera.";
-    }
+$stavke = array();
 
 
-    // =================================================
-    // VALIDACIJA DATUMA
-    // =================================================
+// ---------------------------------------------------------
+// OBRADA FORME
+// ---------------------------------------------------------
 
-    if ($datum == "") {
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-        $greske[] = "Datum je obavezan.";
+    $podaci = array(
 
-    } else {
+        "broj_zapisnika" =>
+            trim(
+                $_POST["broj_zapisnika"] ?? ""
+            ),
 
-        $datumObjekat = DateTime::createFromFormat(
-            "Y-m-d",
-            $datum
-        );
+        "datum" =>
+            trim(
+                $_POST["datum"] ?? ""
+            ),
 
-        if (
-            !$datumObjekat ||
-            $datumObjekat->format("Y-m-d") != $datum
-        ) {
+        "zaposleni" =>
+            trim(
+                $_POST["zaposleni"] ?? ""
+            ),
 
-            $greske[] = "Datum nije ispravan.";
-        }
-    }
+        "odeljenje" =>
+            trim(
+                $_POST["odeljenje"] ?? ""
+            ),
 
+        "napomena" =>
+            trim(
+                $_POST["napomena"] ?? ""
+            )
 
-    // =================================================
-    // VALIDACIJA ZAPOSLENOG
-    // =================================================
-
-    if ($zaposleni == "") {
-
-        $greske[] = "Ime zaposlenog je obavezno.";
-
-    } elseif (strlen($zaposleni) > 100) {
-
-        $greske[] =
-            "Ime zaposlenog može imati najviše 100 karaktera.";
-    }
+    );
 
 
-    // =================================================
-    // VALIDACIJA ODELJENJA
-    // =================================================
-
-    if ($odeljenje == "") {
-
-        $greske[] = "Odeljenje je obavezno.";
-
-    } elseif (strlen($odeljenje) > 100) {
-
-        $greske[] =
-            "Odeljenje može imati najviše 100 karaktera.";
-    }
+    $stavke =
+        isset($_POST["stavke"]) &&
+        is_array($_POST["stavke"])
+            ? $_POST["stavke"]
+            : array();
 
 
-    // =================================================
-    // VALIDACIJA GLAVNE NAPOMENE
-    // =================================================
+    try {
 
-    if (strlen($napomena) > 500) {
-
-        $greske[] =
-            "Napomena može imati najviše 500 karaktera.";
-    }
-
-
-    // =================================================
-    // PROVERA JEDINSTVENOSTI BROJA ZAPISNIKA
-    // =================================================
-
-    if ($brojZapisnika != "") {
-
-        $proveraKonekcija = new BaznaKonekcija();
-
-        $upitProvera = "
-            SELECT id_zaduzenja
-            FROM zaduzenje
-            WHERE broj_zapisnika = ?
-        ";
-
-        $stmtProvera = $proveraKonekcija
-            ->getKonekcija()
-            ->prepare($upitProvera);
-
-        if ($stmtProvera) {
-
-            $stmtProvera->bind_param(
-                "s",
-                $brojZapisnika
+        $id =
+            $kontroler->sacuvaj(
+                $podaci,
+                $stavke
             );
 
-            $stmtProvera->execute();
 
-            $rezultatProvera =
-                $stmtProvera->get_result();
-
-            if ($rezultatProvera->num_rows > 0) {
-
-                $greske[] =
-                    "Broj zapisnika već postoji.";
-            }
-
-            $stmtProvera->close();
-        }
-    }
-
-
-    // =================================================
-    // PROVERA DA LI POSTOJI BAR JEDNA STAVKA OPREME
-    // =================================================
-
-    if (
-        !isset($_POST["id_opreme"]) ||
-        !is_array($_POST["id_opreme"]) ||
-        count($_POST["id_opreme"]) == 0
-    ) {
-
-        $greske[] =
-            "Morate uneti najmanje jednu stavku opreme.";
-    }
-
-
-    // =================================================
-    // VALIDACIJA STAVKI OPREME
-    // =================================================
-
-    if (
-        isset($_POST["id_opreme"]) &&
-        is_array($_POST["id_opreme"])
-    ) {
-
-        // ---------------------------------------------
-        // DOZVOLJENA STANJA OPREME
-        // ---------------------------------------------
-
-        $dozvoljenaStanja = array(
-            "Novo",
-            "Polovno",
-            "Oštećeno"
+        header(
+            "Location: detaljiZaduzenja.php?id="
+            . $id
         );
 
+        exit;
 
-        // ---------------------------------------------
-        // PROLAZAK KROZ SVE STAVKE
-        // ---------------------------------------------
+    } catch (Exception $e) {
 
-        for (
-            $i = 0;
-            $i < count($_POST["id_opreme"]);
-            $i++
-        ) {
-
-            $idOpreme =
-                $_POST["id_opreme"][$i] ?? "";
-
-            $kolicina =
-                $_POST["kolicina"][$i] ?? "";
-
-            $stanje =
-                $_POST["stanje"][$i] ?? "";
-
-            $napomenaStavke =
-                trim(
-                    $_POST["napomena_stavke"][$i] ?? ""
-                );
-
-
-            // -----------------------------------------
-            // PROVERA ID-A OPREME
-            // -----------------------------------------
-
-            if (
-                !is_numeric($idOpreme) ||
-                (int)$idOpreme <= 0
-            ) {
-
-                $greske[] =
-                    "Izabrana oprema nije ispravna.";
-            }
-
-
-            // -----------------------------------------
-            // PROVERA KOLIČINE
-            // -----------------------------------------
-
-            if (
-                !filter_var(
-                    $kolicina,
-                    FILTER_VALIDATE_INT
-                ) ||
-                (int)$kolicina <= 0
-            ) {
-
-                $greske[] =
-                    "Količina mora biti ceo broj veći od 0.";
-            }
-
-
-            // -----------------------------------------
-            // PROVERA STANJA OPREME
-            // -----------------------------------------
-
-            if (
-                !in_array(
-                    $stanje,
-                    $dozvoljenaStanja
-                )
-            ) {
-
-                $greske[] =
-                    "Izabrano stanje opreme nije dozvoljeno.";
-            }
-
-
-            // -----------------------------------------
-            // PROVERA NAPOMENE STAVKE
-            // -----------------------------------------
-
-            if (strlen($napomenaStavke) > 500) {
-
-                $greske[] =
-                    "Napomena stavke može imati najviše 500 karaktera.";
-            }
-        }
-    }
-
-
-    // =================================================
-    // AKO NEMA GREŠAKA - ČUVANJE PODATAKA
-    // =================================================
-
-    if (count($greske) == 0) {
-
-        // =============================================
-        // PREUZIMANJE PODATAKA O STAVKAMA
-        // =============================================
-
-        $idOpreme = $_POST["id_opreme"];
-        $kolicine = $_POST["kolicina"];
-        $stanja = $_POST["stanje"];
-        $napomeneStavki = $_POST["napomena_stavke"];
-
-
-        // =============================================
-        // KREIRANJE TRANSAKCIJE
-        // =============================================
-
-        $transakcija = new BaznaTransakcija();
-
-        // Uzimamo ISTU konekciju koju koristi transakcija
-        $konekcija = $transakcija->getKonekcija();
-
-
-        // =============================================
-        // KREIRANJE OBJEKTA ZADUŽENJA
-        // Koristi istu konekciju kao transakcija
-        // =============================================
-
-        $zaduzenje = new Zaduzenje($konekcija);
-
-
-        // =============================================
-        // POSTAVLJANJE PODATAKA ZADUŽENJA
-        // =============================================
-
-        $zaduzenje->setBrojZapisnika(
-            $brojZapisnika
-        );
-
-        $zaduzenje->setDatum(
-            $datum
-        );
-
-        $zaduzenje->setZaposleni(
-            $zaposleni
-        );
-
-        $zaduzenje->setOdeljenje(
-            $odeljenje
-        );
-
-        $zaduzenje->setNapomena(
-            $napomena
-        );
-
-
-        try {
-
-            // =========================================
-            // POČETAK TRANSAKCIJE
-            // =========================================
-
-            $transakcija->zapocniTransakciju();
-
-
-            // =========================================
-            // ČUVANJE GLAVNOG ZADUŽENJA
-            // =========================================
-
-            $idZaduzenja =
-                $zaduzenje->sacuvaj();
-
-
-            // =========================================
-            // ČUVANJE SVIH STAVKI OPREME
-            // =========================================
-
-            for (
-                $i = 0;
-                $i < count($idOpreme);
-                $i++
-            ) {
-
-                // -------------------------------------
-                // KREIRANJE OBJEKTA OPREME
-                // Koristi istu konekciju
-                // -------------------------------------
-
-                $opremaObjekat =
-                    new Oprema($konekcija);
-
-                $opremaObjekat->setIdOpreme(
-                    $idOpreme[$i]
-                );
-
-
-                // -------------------------------------
-                // KREIRANJE OBJEKTA STAVKE
-                // Koristi istu konekciju
-                // -------------------------------------
-
-                $stavka =
-                    new StavkaZaduzenja(
-                        $konekcija
-                    );
-
-
-                // -------------------------------------
-                // POSTAVLJANJE PODATAKA STAVKE
-                // -------------------------------------
-
-                $stavka->setIdZaduzenja(
-                    $idZaduzenja
-                );
-
-                $stavka->setKolicina(
-                    $kolicine[$i]
-                );
-
-                $stavka->setStanje(
-                    $stanja[$i]
-                );
-
-                $stavka->setNapomena(
-                    $napomeneStavki[$i]
-                );
-
-
-                // -------------------------------------
-                // ASOCIJACIJA SA OPREMOM
-                // -------------------------------------
-
-                $stavka->setOprema(
-                    $opremaObjekat
-                );
-
-
-                // -------------------------------------
-                // ČUVANJE STAVKE
-                // -------------------------------------
-
-                $stavka->sacuvaj();
-
-
-                // -------------------------------------
-                // KOMPOZICIJA
-                // Zaduženje sadrži svoje stavke
-                // -------------------------------------
-
-                $zaduzenje->dodajStavku(
-                    $stavka
-                );
-            }
-
-
-            // =========================================
-            // POTVRĐIVANJE TRANSAKCIJE
-            // =========================================
-
-            $transakcija->potvrdiTransakciju();
-
-
-            // =========================================
-            // PRELAZAK NA PREGLED ZADUŽENJA
-            // =========================================
-
-            header(
-                "Location: pregledZaduzenja.php"
-            );
-
-            exit;
-
-
-        } catch (Exception $greska) {
-
-            // =========================================
-            // AKO DOĐE DO GREŠKE -
-            // PONIŠTAVAMO CELO ZADUŽENJE
-            // =========================================
-
-            $transakcija->ponistiTransakciju();
-
-            $poruka =
-                "Greška pri čuvanju zaduženja: "
-                . $greska->getMessage();
-        }
-    }
-
-
-    // =================================================
-    // AKO POSTOJE GREŠKE - PRIKAZ GREŠAKA
-    // =================================================
-
-    if (count($greske) > 0) {
-
-        $poruka =
-            implode(
-                "\n",
-                $greske
-            );
+        $greska =
+            $e->getMessage();
     }
 }
 
 
-// =====================================================
-// UČITAVANJE SVE OPREME IZ BAZE
-// =====================================================
+// ---------------------------------------------------------
+// OPREMA
+// ---------------------------------------------------------
 
-$oprema = new Oprema();
-
-$rezultatOprema =
-    $oprema->pronadjiSve();
+$svaOprema =
+    $kontroler->pronadjiSvuOpremu();
 
 ?>
 
@@ -519,353 +113,298 @@ $rezultatOprema =
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    <title>Novo zaduženje</title>
+<title>
+    Novo zaduženje
+</title>
 
-    <link
-        rel="stylesheet"
-        href="../css/stil.css"
-    >
+<link rel="stylesheet"
+      href="../css/stil.css">
 
 </head>
 
+
 <body>
 
+<?php require_once "zaglavlje.php"; ?>
 
-    <!-- =============================================
-         ZAGLAVLJE I NAVIGACIJA
-         ============================================= -->
 
-    <?php require_once "zaglavlje.php"; ?>
+<main class="sadrzaj">
 
 
-    <main class="sadrzaj">
+<h2>
+    Novo zaduženje
+</h2>
 
 
-        <!-- =========================================
-             NASLOV STRANICE
-             ========================================= -->
+<?php if ($greska !== ""): ?>
 
-        <h2>Novo zaduženje</h2>
+<div class="greska">
 
+    <?php
+    echo htmlspecialchars(
+        $greska
+    );
+    ?>
 
-        <!-- =========================================
-             PRIKAZ GREŠAKA
-             ========================================= -->
+</div>
 
-        <?php if (count($greske) > 0): ?>
+<?php endif; ?>
 
-            <div class="greska">
 
-                <?php foreach ($greske as $greska): ?>
+<form method="post">
 
-                    <p>
-                        <?php
-                        echo htmlspecialchars($greska);
-                        ?>
-                    </p>
 
-                <?php endforeach; ?>
+<label>
+    Broj zapisnika
+</label>
 
-            </div>
 
-        <?php endif; ?>
+<input
+    type="text"
+    name="broj_zapisnika"
+    maxlength="20"
+    value="<?php
+        echo htmlspecialchars(
+            $podaci["broj_zapisnika"]
+        );
+    ?>"
+    required
+>
 
 
-        <!-- =========================================
-             PRIKAZ GREŠKE TRANSAKCIJE
-             ========================================= -->
+<label>
+    Datum
+</label>
 
-        <?php if ($poruka != "" && count($greske) == 0): ?>
 
-            <p class="greska">
-                <?php
-                echo htmlspecialchars($poruka);
-                ?>
-            </p>
+<input
+    type="date"
+    name="datum"
+    value="<?php
+        echo htmlspecialchars(
+            $podaci["datum"]
+        );
+    ?>"
+    required
+>
 
-        <?php endif; ?>
 
+<label>
+    Zaposleni
+</label>
 
-        <!-- =========================================
-             FORMA ZA UNOS ZADUŽENJA
-             ========================================= -->
 
-        <form
-            method="POST"
-            action=""
-            id="forma-zaduzenje"
-        >
+<input
+    type="text"
+    name="zaposleni"
+    maxlength="100"
+    value="<?php
+        echo htmlspecialchars(
+            $podaci["zaposleni"]
+        );
+    ?>"
+    required
+>
 
 
-            <!-- =====================================
-                 PODACI O GLAVNOM ZADUŽENJU
-                 ===================================== -->
+<label>
+    Odeljenje
+</label>
 
-            <h3>Podaci o zaduženju</h3>
 
+<input
+    type="text"
+    name="odeljenje"
+    maxlength="100"
+    value="<?php
+        echo htmlspecialchars(
+            $podaci["odeljenje"]
+        );
+    ?>"
+    required
+>
 
-            <!-- BROJ ZAPISNIKA -->
 
-            <label for="broj_zapisnika">
-                Broj zapisnika:
-            </label>
+<label>
+    Napomena
+</label>
 
-            <input
-                type="text"
-                id="broj_zapisnika"
-                name="broj_zapisnika"
-                maxlength="20"
-                required
-                value="<?php
-                    echo htmlspecialchars(
-                        $_POST["broj_zapisnika"] ?? ""
-                    );
-                ?>"
-            >
 
+<textarea
+    name="napomena"
+    maxlength="500"
+><?php
 
-            <!-- DATUM -->
+echo htmlspecialchars(
+    $podaci["napomena"]
+);
 
-            <label for="datum">
-                Datum:
-            </label>
+?></textarea>
 
-            <input
-                type="date"
-                id="datum"
-                name="datum"
-                required
-                value="<?php
-                    echo htmlspecialchars(
-                        $_POST["datum"] ?? ""
-                    );
-                ?>"
-            >
 
+<h3>
+    Oprema
+</h3>
 
-            <!-- ZAPOSLENI -->
 
-            <label for="zaposleni">
-                Zaposleni:
-            </label>
+<div id="stavke">
 
-            <input
-                type="text"
-                id="zaposleni"
-                name="zaposleni"
-                maxlength="100"
-                required
-                value="<?php
-                    echo htmlspecialchars(
-                        $_POST["zaposleni"] ?? ""
-                    );
-                ?>"
-            >
 
+<?php foreach (
+    $stavke as $indeks => $stavka
+): ?>
 
-            <!-- ODELJENJE -->
 
-            <label for="odeljenje">
-                Odeljenje:
-            </label>
+<div class="stavka">
 
-            <input
-                type="text"
-                id="odeljenje"
-                name="odeljenje"
-                maxlength="100"
-                required
-                value="<?php
-                    echo htmlspecialchars(
-                        $_POST["odeljenje"] ?? ""
-                    );
-                ?>"
-            >
 
+<label>
+    Oprema
+</label>
 
-            <!-- GLAVNA NAPOMENA -->
 
-            <label for="napomena">
-                Napomena:
-            </label>
+<select
+    name="stavke[<?php
+        echo $indeks;
+    ?>][id_opreme]"
+    required
+>
 
-            <textarea
-                id="napomena"
-                name="napomena"
-                maxlength="500"
-            ><?php
-                echo htmlspecialchars(
-                    $_POST["napomena"] ?? ""
-                );
-            ?></textarea>
 
+<option value="">
+    -- Izaberite opremu --
+</option>
 
-            <!-- =====================================
-                 STAVKE OPREME
-                 ===================================== -->
 
-            <h3>Oprema</h3>
+<?php foreach (
+    $svaOprema as $jednaOprema
+): ?>
 
 
-            <div id="stavke">
+<option
+    value="<?php
+        echo $jednaOprema
+            ->getIdOpreme();
+    ?>"
+>
 
 
-                <!-- =================================
-                     PRVA STAVKA OPREME
-                     ================================= -->
+<?php
+echo htmlspecialchars(
+    $jednaOprema
+        ->getNaziv()
+);
+?>
 
-                <div class="stavka">
 
+</option>
 
-                    <!-- IZBOR OPREME -->
 
-                    <label>
-                        Oprema:
-                    </label>
+<?php endforeach; ?>
 
-                    <select
-                        name="id_opreme[]"
-                        required
-                    >
 
-                        <option value="">
-                            -- Izaberite opremu --
-                        </option>
+</select>
 
 
-                        <?php while (
-                            $red =
-                            $rezultatOprema->fetch_assoc()
-                        ): ?>
+<label>
+    Količina
+</label>
 
-                            <option
-                                value="<?php
-                                    echo $red["id_opreme"];
-                                ?>"
-                            >
 
-                                <?php
+<input
+    type="number"
+    min="1"
+    name="stavke[<?php
+        echo $indeks;
+    ?>][kolicina]"
+    value="<?php
+        echo htmlspecialchars(
+            $stavka["kolicina"] ?? 1
+        );
+    ?>"
+    required
+>
 
-                                echo htmlspecialchars(
-                                    $red["naziv"]
-                                    . " - "
-                                    . $red["proizvodjac"]
-                                );
 
-                                ?>
+<label>
+    Stanje
+</label>
 
-                            </option>
 
-                        <?php endwhile; ?>
+<select
+    name="stavke[<?php
+        echo $indeks;
+    ?>][stanje]"
+    required
+>
 
-                    </select>
+<option value="Novo">
+    Novo
+</option>
 
+<option value="Polovno">
+    Polovno
+</option>
 
-                    <!-- KOLIČINA -->
+<option value="Oštećeno">
+    Oštećeno
+</option>
 
-                    <label>
-                        Količina:
-                    </label>
+</select>
 
-                    <input
-                        type="number"
-                        name="kolicina[]"
-                        min="1"
-                        required
-                    >
 
+<label>
+    Napomena
+</label>
 
-                    <!-- STANJE -->
 
-                    <label>
-                        Stanje:
-                    </label>
+<textarea
+    name="stavke[<?php
+        echo $indeks;
+    ?>][napomena]"
+    maxlength="500"
+></textarea>
 
-                    <select
-                        name="stanje[]"
-                        required
-                    >
 
-                        <option value="">
-                            -- Izaberite stanje --
-                        </option>
+</div>
 
-                        <option value="Novo">
-                            Novo
-                        </option>
 
-                        <option value="Polovno">
-                            Polovno
-                        </option>
+<?php endforeach; ?>
 
-                        <option value="Oštećeno">
-                            Oštećeno
-                        </option>
 
-                    </select>
+</div>
 
 
-                    <!-- NAPOMENA STAVKE -->
+<button
+    type="button"
+    class="dugme"
+    id="dodaj-stavku"
+>
+    + Dodaj opremu
+</button>
 
-                    <label>
-                        Napomena:
-                    </label>
 
-                    <input
-                        type="text"
-                        name="napomena_stavke[]"
-                        maxlength="500"
-                    >
+<button
+    type="submit"
+    class="dugme"
+>
+    Sačuvaj zaduženje
+</button>
 
-                </div>
 
-            </div>
+</form>
 
 
-            <!-- =====================================
-                 DODAVANJE NOVE STAVKE
-                 ===================================== -->
+</main>
 
-            <button
-                type="button"
-                onclick="dodajStavku()"
-            >
-                + Dodaj opremu
-            </button>
 
-
-            <br>
-            <br>
-
-
-            <!-- =====================================
-                 ČUVANJE CELOG ZADUŽENJA
-                 ===================================== -->
-
-            <button type="submit">
-                Sačuvaj zaduženje
-            </button>
-
-
-        </form>
-
-    </main>
-
-
-    <!-- =============================================
-         JAVASCRIPT
-         ============================================= -->
-
-    <script src="../js/zaduzenje.js"></script>
+<script src="../js/zaduzenje.js"></script>
 
 </body>
 
 </html>
-```

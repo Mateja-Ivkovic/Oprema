@@ -1,18 +1,21 @@
-﻿
-<?php
+﻿<?php
 
-session_start();
+require_once "../klase/Sesija.php";
+require_once "../klase/ZaduzenjeKontroler.php";
 
-if (!isset($_SESSION["korisnik"])) {
-    header("Location: ../index.php");
-    exit;
-}
 
-require_once "../klase/Zaduzenje.php";
+$sesija = new Sesija();
 
-$zaduzenje = new Zaduzenje();
+$sesija->proveriPrijavu(
+    "../index.php"
+);
 
-$rezultat = $zaduzenje->prikaziSvaZaduzenja();
+
+$kontroler = new ZaduzenjeKontroler();
+
+
+$zaduzenja =
+    $kontroler->prikaziSvaZaduzenja();
 
 ?>
 
@@ -21,134 +24,178 @@ $rezultat = $zaduzenje->prikaziSvaZaduzenja();
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <title>Štampanje svih zaduženja</title>
+<title>
+    Štampanje svih zaduženja
+</title>
 
-    <style>
+<style>
 
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-        }
+body {
+    font-family: Arial, sans-serif;
+    margin: 30px;
+}
 
-        h1 {
-            text-align: center;
-        }
+h1 {
+    text-align: center;
+}
 
-        .dugmad {
-            margin-bottom: 20px;
-        }
+.dugmad {
+    margin-bottom: 20px;
+}
 
-        button,
-        a {
-            padding: 10px 15px;
-            margin-right: 5px;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            background-color: #3f6fb6;
-            color: white;
-        }
+button,
+a {
+    display: inline-block;
+    padding: 10px 15px;
+    margin-right: 5px;
+    background-color: #3f6fb6;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
 
-        th,
-        td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: left;
-        }
+th,
+td {
+    border: 1px solid #333;
+    padding: 8px;
+    text-align: left;
+}
 
-        th {
-            background-color: #eeeeee;
-        }
+th {
+    background-color: #eeeeee;
+}
 
-        @media print {
+@media print {
 
-            .dugmad {
-                display: none;
-            }
+    .dugmad {
+        display: none;
+    }
 
-            body {
-                margin: 10mm;
-            }
+    body {
+        margin: 10mm;
+    }
 
-        }
+}
 
-    </style>
+</style>
 
 </head>
 
 <body>
 
-    <div class="dugmad">
+<div class="dugmad">
 
-        <button onclick="window.print()">
-            Štampaj
-        </button>
+    <button onclick="window.print()">
+        Štampaj
+    </button>
 
-        <a href="index.php">
-            Nazad
-        </a>
+    <a href="../stranice/pregledZaduzenja.php">
+        Nazad
+    </a>
 
-    </div>
+</div>
 
-    <h1>Pregled svih zaduženja</h1>
 
-    <table>
+<h1>
+    Pregled svih zaduženja
+</h1>
 
-        <thead>
 
-            <tr>
-                <th>Broj zapisnika</th>
-                <th>Datum</th>
-                <th>Zaposleni</th>
-                <th>Odeljenje</th>
-                <th>Napomena</th>
-            </tr>
+<table>
 
-        </thead>
+<thead>
 
-        <tbody>
+<tr>
 
-            <?php while ($red = $rezultat->fetch_assoc()): ?>
+<th>Broj zapisnika</th>
+<th>Datum</th>
+<th>Zaposleni</th>
+<th>Odeljenje</th>
+<th>Napomena</th>
 
-                <tr>
+</tr>
 
-                    <td>
-                        <?php echo htmlspecialchars($red["broj_zapisnika"]); ?>
-                    </td>
+</thead>
 
-                    <td>
-                        <?php echo htmlspecialchars($red["datum"]); ?>
-                    </td>
 
-                    <td>
-                        <?php echo htmlspecialchars($red["zaposleni"]); ?>
-                    </td>
+<tbody>
 
-                    <td>
-                        <?php echo htmlspecialchars($red["odeljenje"]); ?>
-                    </td>
+<?php if (!empty($zaduzenja)): ?>
 
-                    <td>
-                        <?php echo htmlspecialchars($red["napomena"]); ?>
-                    </td>
+    <?php foreach ($zaduzenja as $zaduzenje): ?>
 
-                </tr>
+        <tr>
 
-            <?php endwhile; ?>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getBrojZapisnika()
+                );
+                ?>
+            </td>
 
-        </tbody>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getDatum()
+                );
+                ?>
+            </td>
 
-    </table>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getZaposleni()
+                );
+                ?>
+            </td>
+
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getOdeljenje()
+                );
+                ?>
+            </td>
+
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getNapomena()
+                );
+                ?>
+            </td>
+
+        </tr>
+
+    <?php endforeach; ?>
+
+<?php else: ?>
+
+    <tr>
+
+        <td colspan="5">
+            Nema zaduženja.
+        </td>
+
+    </tr>
+
+<?php endif; ?>
+
+</tbody>
+
+</table>
 
 </body>
 
 </html>
-

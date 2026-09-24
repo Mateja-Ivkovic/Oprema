@@ -1,30 +1,65 @@
-﻿
-<?php
+﻿<?php
 
-session_start();
+require_once "../klase/Sesija.php";
+require_once "../klase/ZaduzenjeKontroler.php";
 
-if (!isset($_SESSION["korisnik"])) {
-    header("Location: ../index.php");
-    exit;
+
+$sesija = new Sesija();
+
+$sesija->proveriPrijavu(
+    "../index.php"
+);
+
+
+// ---------------------------------------------------------
+// PROVERA ID-A
+// ---------------------------------------------------------
+
+if (
+    !isset($_GET["id"]) ||
+    !is_numeric($_GET["id"])
+) {
+
+    die("Neispravan ID zaduženja.");
 }
 
-require_once "../klase/Zaduzenje.php";
 
-if (!isset($_GET["id"]) || !is_numeric($_GET["id"])) {
-    die("Zaduženje nije pravilno izabrano.");
+$idZaduzenja =
+    (int) $_GET["id"];
+
+
+// ---------------------------------------------------------
+// KONTROLER
+// ---------------------------------------------------------
+
+$kontroler =
+    new ZaduzenjeKontroler();
+
+
+// ---------------------------------------------------------
+// ZADUŽENJE
+// ---------------------------------------------------------
+
+$zaduzenje =
+    $kontroler->pronadjiPoId(
+        $idZaduzenja
+    );
+
+
+if (!$zaduzenje) {
+
+    die("Zaduženje nije pronađeno.");
 }
 
-$idZaduzenja = (int) $_GET["id"];
 
-$zaduzenje = new Zaduzenje();
+// ---------------------------------------------------------
+// STAVKE
+// ---------------------------------------------------------
 
-$podaci = $zaduzenje->pronadjiPoId($idZaduzenja);
-
-if (!$podaci) {
-    die("Zaduženje ne postoji.");
-}
-
-$stavke = $zaduzenje->pronadjiStavke($idZaduzenja);
+$stavke =
+    $kontroler->pronadjiStavke(
+        $idZaduzenja
+    );
 
 ?>
 
@@ -33,282 +68,332 @@ $stavke = $zaduzenje->pronadjiStavke($idZaduzenja);
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+    Zapisnik o zaduživanju službene opreme
+</title>
 
-    <title>Zapisnik o zaduživanju službene opreme</title>
+<style>
 
-    <style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #eeeeee;
+    margin: 0;
+    padding: 30px;
+}
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #eeeeee;
-            margin: 0;
-            padding: 30px;
-        }
+.dokument {
+    width: 800px;
+    min-height: 1000px;
+    margin: auto;
+    padding: 50px;
+    background-color: white;
+}
 
-        .dugmad {
-            width: 800px;
-            margin: 0 auto 20px auto;
-        }
+.dugmad {
+    margin-bottom: 20px;
+}
 
-        .dugmad button,
-        .dugmad a {
-            display: inline-block;
-            padding: 10px 15px;
-            margin-right: 5px;
-            background-color: #3f6fb6;
-            color: white;
-            text-decoration: none;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+button,
+a {
+    display: inline-block;
+    padding: 10px 15px;
+    margin-right: 5px;
+    background-color: #3f6fb6;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
-        .dokument {
-            width: 800px;
-            min-height: 1000px;
-            margin: 0 auto;
-            padding: 50px;
-            box-sizing: border-box;
-            background-color: white;
-        }
+h1 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 40px;
+}
 
-        h1 {
-            text-align: center;
-            font-size: 22px;
-            margin-bottom: 40px;
-        }
+.podaci {
+    margin-bottom: 30px;
+}
 
-        .podaci {
-            margin-bottom: 30px;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
 
-        .podaci p {
-            margin: 10px 0;
-        }
+th,
+td {
+    border: 1px solid #333;
+    padding: 8px;
+}
 
-        .tabela {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+th {
+    background-color: #eeeeee;
+}
 
-        .tabela th,
-        .tabela td {
-            border: 1px solid black;
-            padding: 8px;
-        }
+.potpis {
+    margin-top: 100px;
+    display: flex;
+    justify-content: space-between;
+}
 
-        .tabela th {
-            text-align: center;
-        }
+.potpis div {
+    width: 40%;
+    text-align: center;
+}
 
-        .tabela td {
-            vertical-align: top;
-        }
+@media print {
 
-        .napomena {
-            margin-top: 30px;
-        }
+    body {
+        background-color: white;
+        padding: 0;
+    }
 
-        .potpisi {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 100px;
-        }
+    .dugmad {
+        display: none;
+    }
 
-        .potpis {
-            width: 250px;
-            text-align: center;
-        }
+    .dokument {
+        width: auto;
+        min-height: auto;
+        padding: 20px;
+    }
 
-        .linija {
-            border-top: 1px solid black;
-            margin-bottom: 8px;
-        }
+}
 
-        @media print {
-
-            body {
-                background-color: white;
-                padding: 0;
-            }
-
-            .dugmad {
-                display: none;
-            }
-
-            .dokument {
-                width: 100%;
-                min-height: auto;
-                padding: 20px;
-                margin: 0;
-            }
-
-        }
-
-    </style>
+</style>
 
 </head>
 
 <body>
 
-    <div class="dugmad">
+<div class="dugmad">
 
-        <button onclick="window.print()">
-            Štampaj zapisnik
-        </button>
+    <button onclick="window.print()">
+        Štampaj
+    </button>
 
-        <a href="../stranice/pregledZaduzenja.php">
-            Nazad
-        </a>
+    <a href="../stranice/detaljiZaduzenja.php?id=<?php
+        echo $idZaduzenja;
+    ?>">
+        Nazad
+    </a>
 
-    </div>
+</div>
 
-    <div class="dokument">
 
-        <h1>
-            ZAPISNIK O ZADUŽIVANJU SLUŽBENE OPREME
-        </h1>
+<div class="dokument">
 
-        <div class="podaci">
+    <h1>
+        ZAPISNIK O ZADUŽIVANJU
+        SLUŽBENE OPREME
+    </h1>
 
-            <p>
-                <strong>Broj zapisnika:</strong>
-                <?php echo htmlspecialchars($podaci["broj_zapisnika"]); ?>
-            </p>
 
-            <p>
-                <strong>Datum:</strong>
-                <?php echo htmlspecialchars($podaci["datum"]); ?>
-            </p>
-
-            <p>
-                <strong>Zaposleni:</strong>
-                <?php echo htmlspecialchars($podaci["zaposleni"]); ?>
-            </p>
-
-            <p>
-                <strong>Odeljenje:</strong>
-                <?php echo htmlspecialchars($podaci["odeljenje"]); ?>
-            </p>
-
-        </div>
+    <div class="podaci">
 
         <p>
-            Zaposlenom je predata sledeća službena oprema:
+            <strong>
+                Broj zapisnika:
+            </strong>
+
+            <?php
+            echo htmlspecialchars(
+                $zaduzenje->getBrojZapisnika()
+            );
+            ?>
         </p>
 
-        <table class="tabela">
 
-            <thead>
+        <p>
+            <strong>
+                Datum:
+            </strong>
 
-                <tr>
-                    <th>Redni broj</th>
-                    <th>Oprema</th>
-                    <th>Proizvođač</th>
-                    <th>Količina</th>
-                    <th>Stanje</th>
-                    <th>Napomena</th>
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                <?php
-
-                $redniBroj = 1;
-
-                while ($stavka = $stavke->fetch_assoc()):
-
-                ?>
-
-                    <tr>
-
-                        <td style="text-align: center;">
-                            <?php echo $redniBroj; ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["naziv"]); ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["proizvodjac"]); ?>
-                        </td>
-
-                        <td style="text-align: center;">
-                            <?php echo htmlspecialchars($stavka["kolicina"]); ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["stanje"]); ?>
-                        </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($stavka["napomena"]); ?>
-                        </td>
-
-                    </tr>
-
-                <?php
-
-                    $redniBroj++;
-
-                endwhile;
-
-                ?>
-
-            </tbody>
-
-        </table>
-
-        <?php if (!empty($podaci["napomena"])): ?>
-
-            <div class="napomena">
-
-                <strong>Napomena:</strong>
-
-                <p>
-                    <?php echo nl2br(htmlspecialchars($podaci["napomena"])); ?>
-                </p>
-
-            </div>
-
-        <?php endif; ?>
-
-        <p style="margin-top: 40px;">
-            Potpisivanjem ovog zapisnika zaposleni potvrđuje da je navedenu
-            službenu opremu preuzeo i da je upoznat sa obavezom njenog
-            odgovornog korišćenja.
+            <?php
+            echo htmlspecialchars(
+                $zaduzenje->getDatum()
+            );
+            ?>
         </p>
 
-        <div class="potpisi">
 
-            <div class="potpis">
+        <p>
+            <strong>
+                Zaposleni:
+            </strong>
 
-                <div class="linija"></div>
+            <?php
+            echo htmlspecialchars(
+                $zaduzenje->getZaposleni()
+            );
+            ?>
+        </p>
 
-                Zaposleni
 
-            </div>
+        <p>
+            <strong>
+                Odeljenje:
+            </strong>
 
-            <div class="potpis">
+            <?php
+            echo htmlspecialchars(
+                $zaduzenje->getOdeljenje()
+            );
+            ?>
+        </p>
 
-                <div class="linija"></div>
+    </div>
 
-                Odgovorno lice
 
-            </div>
+    <table>
+
+        <thead>
+
+        <tr>
+
+            <th>Redni broj</th>
+            <th>Oprema</th>
+            <th>Proizvođač</th>
+            <th>Količina</th>
+            <th>Stanje</th>
+            <th>Napomena</th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody>
+
+        <?php
+
+        $redniBroj = 1;
+
+        foreach ($stavke as $stavka):
+
+            $oprema =
+                $stavka->getOprema();
+
+        ?>
+
+            <tr>
+
+                <td>
+                    <?php
+                    echo $redniBroj++;
+                    ?>
+                </td>
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $oprema->getNaziv()
+                    );
+                    ?>
+                </td>
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $oprema->getProizvodjac()
+                    );
+                    ?>
+                </td>
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $stavka->getKolicina()
+                    );
+                    ?>
+                </td>
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $stavka->getStanje()
+                    );
+                    ?>
+                </td>
+
+                <td>
+                    <?php
+                    echo htmlspecialchars(
+                        $stavka->getNapomena()
+                    );
+                    ?>
+                </td>
+
+            </tr>
+
+        <?php endforeach; ?>
+
+        </tbody>
+
+    </table>
+
+
+    <?php if (
+        trim($zaduzenje->getNapomena()) !== ""
+    ): ?>
+
+        <p>
+
+            <strong>
+                Napomena:
+            </strong>
+
+            <?php
+            echo htmlspecialchars(
+                $zaduzenje->getNapomena()
+            );
+            ?>
+
+        </p>
+
+    <?php endif; ?>
+
+
+    <p style="margin-top: 40px;">
+
+        Ovim zapisnikom potvrđuje se da je
+        navedena službena oprema predata
+        zaposlenom na korišćenje i čuvanje.
+
+    </p>
+
+
+    <div class="potpis">
+
+        <div>
+
+            Zaposleni
+
+            <br><br><br>
+
+            ______________________
+
+        </div>
+
+
+        <div>
+
+            Odgovorno lice
+
+            <br><br><br>
+
+            ______________________
 
         </div>
 
     </div>
+
+</div>
 
 </body>
 
 </html>
-

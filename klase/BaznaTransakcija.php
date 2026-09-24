@@ -19,5 +19,3 @@ class BaznaTransakcija extends BaznaKonekcija
         return $this->konekcija->rollback();
     }
 }
-
-?>

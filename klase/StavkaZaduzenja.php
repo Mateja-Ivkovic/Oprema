@@ -10,16 +10,16 @@ class StavkaZaduzenja extends BaznaTabela
     private $kolicina;
     private $stanje;
     private $napomena;
-
     private $oprema;
 
-   public function __construct($konekcija = null)
-{
-    parent::__construct(
-        "stavka_zaduzenja",
-        $konekcija
-    );
-}
+    public function __construct($konekcija = null)
+    {
+        parent::__construct(
+            "stavka_zaduzenja",
+            $konekcija
+        );
+    }
+
     public function getIdStavke()
     {
         return $this->idStavke;
@@ -79,59 +79,103 @@ class StavkaZaduzenja extends BaznaTabela
     {
         $this->oprema = $oprema;
     }
+
     public function sacuvaj()
-{
-    $upit = "INSERT INTO stavka_zaduzenja
-             (id_zaduzenja, id_opreme, kolicina, stanje, napomena)
-             VALUES (?, ?, ?, ?, ?)";
+    {
+        $upit = "
+            INSERT INTO stavka_zaduzenja
+            (
+                id_zaduzenja,
+                id_opreme,
+                kolicina,
+                stanje,
+                napomena
+            )
+            VALUES (?, ?, ?, ?, ?)
+        ";
 
-    $stmt = $this->konekcija->prepare($upit);
+        $stmt =
+            $this->konekcija->prepare($upit);
 
-    $idZaduzenja = $this->idZaduzenja;
-    $idOpreme = $this->oprema->getIdOpreme();
-    $kolicina = $this->kolicina;
-    $stanje = $this->stanje;
-    $napomena = $this->napomena;
+        $idOpreme =
+            $this->oprema->getIdOpreme();
 
-    $stmt->bind_param(
-        "iiiss",
-        $idZaduzenja,
-        $idOpreme,
-        $kolicina,
-        $stanje,
-        $napomena
-    );
+        $stmt->bind_param(
+            "iiiss",
+            $this->idZaduzenja,
+            $idOpreme,
+            $this->kolicina,
+            $this->stanje,
+            $this->napomena
+        );
 
-    if (!$stmt->execute()) {
-        die("Greška pri čuvanju stavke: " . $stmt->error);
+        if (!$stmt->execute()) {
+            throw new Exception(
+                "Greška pri čuvanju stavke: "
+                . $stmt->error
+            );
+        }
+
+        $this->idStavke =
+            $stmt->insert_id;
+    }
+
+    public function izmeni()
+    {
+        $upit = "
+            UPDATE stavka_zaduzenja
+            SET
+                id_opreme = ?,
+                kolicina = ?,
+                stanje = ?,
+                napomena = ?
+            WHERE id_stavke = ?
+        ";
+
+        $stmt =
+            $this->konekcija->prepare($upit);
+
+        $idOpreme =
+            $this->oprema->getIdOpreme();
+
+        $stmt->bind_param(
+            "iissi",
+            $idOpreme,
+            $this->kolicina,
+            $this->stanje,
+            $this->napomena,
+            $this->idStavke
+        );
+
+        if (!$stmt->execute()) {
+            throw new Exception(
+                "Greška pri izmeni stavke: "
+                . $stmt->error
+            );
+        }
+    }
+
+    public function obrisiSveZaZaduzenje(
+        $idZaduzenja
+    ) {
+        $upit = "
+            DELETE FROM stavka_zaduzenja
+            WHERE id_zaduzenja = ?
+        ";
+
+        $stmt =
+            $this->konekcija->prepare($upit);
+
+        $stmt->bind_param(
+            "i",
+            $idZaduzenja
+        );
+
+        if (!$stmt->execute()) {
+            throw new Exception(
+                "Greška pri brisanju stavki: "
+                . $stmt->error
+            );
+        }
     }
 }
-public function izmeni()
-{
-    $upit = "UPDATE stavka_zaduzenja
-             SET id_opreme = ?,
-                 kolicina = ?,
-                 stanje = ?,
-                 napomena = ?
-             WHERE id_stavke = ?";
-
-    $stmt = $this->konekcija->prepare($upit);
-
-    $idOpreme = $this->oprema->getIdOpreme();
-
-    $stmt->bind_param(
-        "iissi",
-        $idOpreme,
-        $this->kolicina,
-        $this->stanje,
-        $this->napomena,
-        $this->idStavke
-    );
-
-    if (!$stmt->execute()) {
-        die("Greška pri izmeni stavke: " . $stmt->error);
-    }
-}
-}
-
-?>

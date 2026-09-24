@@ -1,58 +1,53 @@
-﻿```php
-<?php
+﻿<?php
 
-session_start();
+require_once "../klase/Sesija.php";
+require_once "../klase/ZaduzenjeKontroler.php";
 
-if (!isset($_SESSION["korisnik"])) {
-    header("Location: ../index.php");
-    exit;
-}
 
-require_once "../klase/Zaduzenje.php";
+$sesija = new Sesija();
 
-$brojZapisnika = isset($_GET["broj_zapisnika"])
-    ? trim($_GET["broj_zapisnika"])
-    : "";
-
-$zaposleni = isset($_GET["zaposleni"])
-    ? trim($_GET["zaposleni"])
-    : "";
-
-$odeljenje = isset($_GET["odeljenje"])
-    ? trim($_GET["odeljenje"])
-    : "";
-
-$zaduzenje = new Zaduzenje();
-
-$upit = "SELECT
-            id_zaduzenja,
-            broj_zapisnika,
-            datum,
-            zaposleni,
-            odeljenje,
-            napomena
-         FROM zaduzenje
-         WHERE broj_zapisnika LIKE ?
-         AND zaposleni LIKE ?
-         AND odeljenje LIKE ?
-         ORDER BY datum DESC";
-
-$stmt = $zaduzenje->getKonekcija()->prepare($upit);
-
-$brojFilter = "%" . $brojZapisnika . "%";
-$zaposleniFilter = "%" . $zaposleni . "%";
-$odeljenjeFilter = "%" . $odeljenje . "%";
-
-$stmt->bind_param(
-    "sss",
-    $brojFilter,
-    $zaposleniFilter,
-    $odeljenjeFilter
+$sesija->proveriPrijavu(
+    "../index.php"
 );
 
-$stmt->execute();
 
-$rezultat = $stmt->get_result();
+// ---------------------------------------------------------
+// FILTERI
+// ---------------------------------------------------------
+
+$brojZapisnika =
+    trim(
+        $_GET["broj_zapisnika"] ?? ""
+    );
+
+$zaposleni =
+    trim(
+        $_GET["zaposleni"] ?? ""
+    );
+
+$odeljenje =
+    trim(
+        $_GET["odeljenje"] ?? ""
+    );
+
+
+// ---------------------------------------------------------
+// KONTROLER
+// ---------------------------------------------------------
+
+$kontroler = new ZaduzenjeKontroler();
+
+
+// ---------------------------------------------------------
+// PRONALAŽENJE ZADUŽENJA
+// ---------------------------------------------------------
+
+$zaduzenja =
+    $kontroler->pronadjiPoFilterima(
+        $brojZapisnika,
+        $zaposleni,
+        $odeljenje
+    );
 
 ?>
 
@@ -61,175 +56,221 @@ $rezultat = $stmt->get_result();
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <title>Štampanje filtriranih zaduženja</title>
+<title>
+    Štampanje filtriranih zaduženja
+</title>
 
-    <style>
+<style>
 
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-        }
+body {
+    font-family: Arial, sans-serif;
+    margin: 30px;
+}
 
-        h1 {
-            text-align: center;
-        }
+h1 {
+    text-align: center;
+}
 
-        .dugmad {
-            margin-bottom: 20px;
-        }
+.dugmad {
+    margin-bottom: 20px;
+}
 
-        button,
-        a {
-            display: inline-block;
-            padding: 10px 15px;
-            margin-right: 5px;
-            background-color: #3f6fb6;
-            color: white;
-            text-decoration: none;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+button,
+a {
+    display: inline-block;
+    padding: 10px 15px;
+    margin-right: 5px;
+    background-color: #3f6fb6;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
-        .filteri {
-            margin-bottom: 20px;
-        }
+.filteri {
+    margin-bottom: 20px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
 
-        th,
-        td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: left;
-        }
+th,
+td {
+    border: 1px solid #333;
+    padding: 8px;
+    text-align: left;
+}
 
-        th {
-            background-color: #eeeeee;
-        }
+th {
+    background-color: #eeeeee;
+}
 
-        @media print {
+@media print {
 
-            .dugmad {
-                display: none;
-            }
+    .dugmad {
+        display: none;
+    }
 
-            body {
-                margin: 10mm;
-            }
+    body {
+        margin: 10mm;
+    }
 
-        }
+}
 
-    </style>
+</style>
 
 </head>
 
 <body>
 
-    <div class="dugmad">
+<div class="dugmad">
 
-        <button onclick="window.print()">
-            Štampaj
-        </button>
+    <button onclick="window.print()">
+        Štampaj
+    </button>
 
-        <a href="../stranice/pregledZaduzenja.php">
-            Nazad
-        </a>
+    <a href="../stranice/pregledZaduzenja.php">
+        Nazad
+    </a>
 
-    </div>
+</div>
 
-    <h1>Pregled filtriranih zaduženja</h1>
 
-    <div class="filteri">
+<h1>
+    Pregled filtriranih zaduženja
+</h1>
 
-        <strong>Izabrani filteri:</strong>
 
-        <br><br>
+<div class="filteri">
 
-        Broj zapisnika:
-        <?php echo htmlspecialchars($brojZapisnika); ?>
+    <strong>
+        Izabrani filteri:
+    </strong>
 
-        <br>
+    <br><br>
 
-        Zaposleni:
-        <?php echo htmlspecialchars($zaposleni); ?>
+    Broj zapisnika:
 
-        <br>
+    <?php
+    echo htmlspecialchars(
+        $brojZapisnika
+    );
+    ?>
 
-        Odeljenje:
-        <?php echo htmlspecialchars($odeljenje); ?>
+    <br>
 
-    </div>
+    Zaposleni:
 
-    <table>
+    <?php
+    echo htmlspecialchars(
+        $zaposleni
+    );
+    ?>
 
-        <thead>
+    <br>
 
-            <tr>
-                <th>Broj zapisnika</th>
-                <th>Datum</th>
-                <th>Zaposleni</th>
-                <th>Odeljenje</th>
-                <th>Napomena</th>
-            </tr>
+    Odeljenje:
 
-        </thead>
+    <?php
+    echo htmlspecialchars(
+        $odeljenje
+    );
+    ?>
 
-        <tbody>
+</div>
 
-            <?php if ($rezultat->num_rows > 0): ?>
 
-                <?php while ($red = $rezultat->fetch_assoc()): ?>
+<table>
 
-                    <tr>
+<thead>
 
-                        <td>
-                            <?php echo htmlspecialchars($red["broj_zapisnika"]); ?>
-                        </td>
+<tr>
 
-                        <td>
-                            <?php echo htmlspecialchars($red["datum"]); ?>
-                        </td>
+<th>Broj zapisnika</th>
+<th>Datum</th>
+<th>Zaposleni</th>
+<th>Odeljenje</th>
+<th>Napomena</th>
 
-                        <td>
-                            <?php echo htmlspecialchars($red["zaposleni"]); ?>
-                        </td>
+</tr>
 
-                        <td>
-                            <?php echo htmlspecialchars($red["odeljenje"]); ?>
-                        </td>
+</thead>
 
-                        <td>
-                            <?php echo htmlspecialchars($red["napomena"]); ?>
-                        </td>
 
-                    </tr>
+<tbody>
 
-                <?php endwhile; ?>
+<?php if (!empty($zaduzenja)): ?>
 
-            <?php else: ?>
+    <?php foreach ($zaduzenja as $zaduzenje): ?>
 
-                <tr>
+        <tr>
 
-                    <td colspan="5">
-                        Nema rezultata za zadate filtere.
-                    </td>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getBrojZapisnika()
+                );
+                ?>
+            </td>
 
-                </tr>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getDatum()
+                );
+                ?>
+            </td>
 
-            <?php endif; ?>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getZaposleni()
+                );
+                ?>
+            </td>
 
-        </tbody>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getOdeljenje()
+                );
+                ?>
+            </td>
 
-    </table>
+            <td>
+                <?php
+                echo htmlspecialchars(
+                    $zaduzenje->getNapomena()
+                );
+                ?>
+            </td>
+
+        </tr>
+
+    <?php endforeach; ?>
+
+<?php else: ?>
+
+    <tr>
+
+        <td colspan="5">
+            Nema rezultata za zadate filtere.
+        </td>
+
+    </tr>
+
+<?php endif; ?>
+
+</tbody>
+
+</table>
 
 </body>
 
 </html>
-```
