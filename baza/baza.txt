@@ -119,3 +119,22 @@ DELIMITER ;
 -------------------------------------------------------------------
 
 
+DELIMITER //
+
+CREATE PROCEDURE pronadji_zaduzenja_zaposlenog(
+    IN p_zaposleni VARCHAR(100)
+)
+BEGIN
+    SELECT
+        id_zaduzenja,
+        broj_zapisnika,
+        datum,
+        zaposleni,
+        odeljenje,
+        napomena
+    FROM zaduzenje
+    WHERE zaposleni LIKE CONCAT('%', p_zaposleni, '%')
+    ORDER BY datum DESC;
+END //
+
+DELIMITER ;

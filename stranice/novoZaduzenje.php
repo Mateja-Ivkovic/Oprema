@@ -3,20 +3,16 @@
 require_once "../klase/Sesija.php";
 require_once "../klase/ZaduzenjeKontroler.php";
 
-
 $sesija = new Sesija();
 
 $sesija->proveriPrijavu(
     "../index.php"
 );
 
-
 $kontroler =
     new ZaduzenjeKontroler();
 
-
 $greska = "";
-
 
 $podaci = array(
 
@@ -29,7 +25,21 @@ $podaci = array(
 );
 
 
-$stavke = array();
+/*
+ * Pocetna stavka opreme
+ */
+$stavke = array(
+
+    array(
+
+        "id_opreme" => "",
+        "kolicina" => 1,
+        "stanje" => "Novo",
+        "napomena" => ""
+
+    )
+
+);
 
 
 // ---------------------------------------------------------
@@ -291,14 +301,29 @@ echo htmlspecialchars(
         echo $jednaOprema
             ->getIdOpreme();
     ?>"
+    <?php
+
+    if (
+        ($stavka["id_opreme"] ?? "")
+        ==
+        $jednaOprema->getIdOpreme()
+    ) {
+
+        echo "selected";
+
+    }
+
+    ?>
 >
 
 
 <?php
+
 echo htmlspecialchars(
     $jednaOprema
         ->getNaziv()
 );
+
 ?>
 
 
@@ -343,17 +368,63 @@ echo htmlspecialchars(
     required
 >
 
-<option value="Novo">
+
+<option
+    value="Novo"
+    <?php
+
+    if (
+        ($stavka["stanje"] ?? "Novo")
+        === "Novo"
+    ) {
+
+        echo "selected";
+
+    }
+
+    ?>
+>
     Novo
 </option>
 
-<option value="Polovno">
+
+<option
+    value="Polovno"
+    <?php
+
+    if (
+        ($stavka["stanje"] ?? "")
+        === "Polovno"
+    ) {
+
+        echo "selected";
+
+    }
+
+    ?>
+>
     Polovno
 </option>
 
-<option value="Oštećeno">
+
+<option
+    value="Oštećeno"
+    <?php
+
+    if (
+        ($stavka["stanje"] ?? "")
+        === "Oštećeno"
+    ) {
+
+        echo "selected";
+
+    }
+
+    ?>
+>
     Oštećeno
 </option>
+
 
 </select>
 
@@ -368,7 +439,13 @@ echo htmlspecialchars(
         echo $indeks;
     ?>][napomena]"
     maxlength="500"
-></textarea>
+><?php
+
+echo htmlspecialchars(
+    $stavka["napomena"] ?? ""
+);
+
+?></textarea>
 
 
 </div>

@@ -109,55 +109,90 @@ class Zaduzenje extends BaznaTabela
     }
 
 
-    public function sacuvaj()
-    {
-        $upit = "
-            INSERT INTO zaduzenje
-            (
-                broj_zapisnika,
-                datum,
-                zaposleni,
-                odeljenje,
-                napomena
-            )
-            VALUES (?, ?, ?, ?, ?)
-        ";
+   public function sacuvaj()
+{
+    $upit =
+        "CALL dodaj_zaduzenje(?, ?, ?, ?, ?)";
 
-        $stmt =
-            $this->konekcija->prepare($upit);
+    $stmt =
+        $this->konekcija->prepare($upit);
 
-        $stmt->bind_param(
-            "sssss",
-            $this->brojZapisnika,
-            $this->datum,
-            $this->zaposleni,
-            $this->odeljenje,
-            $this->napomena
+    if (!$stmt) {
+        throw new Exception(
+            "Greška pri pripremi procedure: "
+            . $this->konekcija->error
+        );
+    }
+
+    $stmt->bind_param(
+        "sssss",
+        $this->brojZapisnika,
+        $this->datum,
+        $this->zaposleni,
+        $this->odeljenje,
+        $this->napomena
+    );
+
+    if (!$stmt->execute()) {
+        throw new Exception(
+            "Greška pri izvršavanju procedure: "
+            . $stmt->error
+        );
+    }
+
+    $stmt->close();
+
+    /*
+     * Nakon CALL procedure ponovo pronalazimo
+     * upravo uneto zaduženje preko broja zapisnika.
+     */
+    $upit =
+        "SELECT id_zaduzenja
+         FROM zaduzenje
+         WHERE broj_zapisnika = ?";
+
+    $stmt =
+        $this->konekcija->prepare($upit);
+
+    $stmt->bind_param(
+        "s",
+        $this->brojZapisnika
+    );
+
+    $stmt->execute();
+
+    $rezultat =
+        $stmt->get_result();
+
+    $red =
+        $rezultat->fetch_assoc();
+
+    $stmt->close();
+
+    if (!$red) {
+        throw new Exception(
+            "Zaduženje je sačuvano, ali ID zaduženja nije pronađen."
+        );
+    }
+
+    $this->idZaduzenja =
+        $red["id_zaduzenja"];
+
+
+    /*
+     * Čuvanje stavki opreme ostaje isto.
+     */
+    foreach ($this->stavke as $stavka) {
+
+        $stavka->setIdZaduzenja(
+            $this->idZaduzenja
         );
 
-        if (!$stmt->execute()) {
-            throw new Exception(
-                "Greška pri čuvanju zaduženja: "
-                . $stmt->error
-            );
-        }
-
-        $this->idZaduzenja =
-            $stmt->insert_id;
-
-
-        foreach ($this->stavke as $stavka) {
-
-            $stavka->setIdZaduzenja(
-                $this->idZaduzenja
-            );
-
-            $stavka->sacuvaj();
-        }
-
-
-        return $this->idZaduzenja;
+        $stavka->sacuvaj();
     }
+
+    return $this->idZaduzenja;
+}
 
 
     public function pronadjiPoId($id)
@@ -316,6 +351,99 @@ class Zaduzenje extends BaznaTabela
 
 
         return $stavke;
+    }
+
+
+    // ---------------------------------------------------------
+    // STORED PROCEDURE
+    // ---------------------------------------------------------
+
+    public function pronadjiZaduzenjaProcedurom(
+        $zaposleni
+    ) {
+        $upit =
+            "CALL pronadji_zaduzenja_zaposlenog(?)";
+
+
+        $stmt =
+            $this->konekcija->prepare($upit);
+
+
+        if (!$stmt) {
+            throw new Exception(
+                "Greška pri pripremi procedure: "
+                . $this->konekcija->error
+            );
+        }
+
+
+        $stmt->bind_param(
+            "s",
+            $zaposleni
+        );
+
+
+        if (!$stmt->execute()) {
+            throw new Exception(
+                "Greška pri izvršavanju procedure: "
+                . $stmt->error
+            );
+        }
+
+
+        $rezultat =
+            $stmt->get_result();
+
+
+        $zaduzenja =
+            array();
+
+
+        while (
+            $red =
+            $rezultat->fetch_assoc()
+        ) {
+
+            $zaduzenje =
+                new Zaduzenje(
+                    $this->konekcija
+                );
+
+
+            $zaduzenje->setIdZaduzenja(
+                $red["id_zaduzenja"]
+            );
+
+            $zaduzenje->setBrojZapisnika(
+                $red["broj_zapisnika"]
+            );
+
+            $zaduzenje->setDatum(
+                $red["datum"]
+            );
+
+            $zaduzenje->setZaposleni(
+                $red["zaposleni"]
+            );
+
+            $zaduzenje->setOdeljenje(
+                $red["odeljenje"]
+            );
+
+            $zaduzenje->setNapomena(
+                $red["napomena"]
+            );
+
+
+            $zaduzenja[] =
+                $zaduzenje;
+        }
+
+
+        $stmt->close();
+
+
+        return $zaduzenja;
     }
 
 

@@ -11,6 +11,7 @@ class ZaduzenjeKontroler
     private $zaduzenje;
     private $oprema;
 
+
     public function __construct()
     {
         $baznaKonekcija =
@@ -30,11 +31,13 @@ class ZaduzenjeKontroler
             );
     }
 
+
     public function prikaziSvaZaduzenja()
     {
         return $this->zaduzenje
             ->prikaziSvaZaduzenja();
     }
+
 
     public function pronadjiPoId($id)
     {
@@ -42,11 +45,13 @@ class ZaduzenjeKontroler
             ->pronadjiPoId($id);
     }
 
+
     public function pronadjiStavke($id)
     {
         return $this->zaduzenje
             ->pronadjiStavke($id);
     }
+
 
     public function pronadjiPoFilterima(
         $brojZapisnika,
@@ -61,6 +66,21 @@ class ZaduzenjeKontroler
             );
     }
 
+
+    // ---------------------------------------------------------
+    // STORED PROCEDURE
+    // ---------------------------------------------------------
+
+    public function pronadjiZaduzenjaProcedurom(
+        $zaposleni
+    ) {
+        return $this->zaduzenje
+            ->pronadjiZaduzenjaProcedurom(
+                $zaposleni
+            );
+    }
+
+
     public function pronadjiSvuOpremu()
     {
         $rezultat =
@@ -68,7 +88,11 @@ class ZaduzenjeKontroler
 
         $oprema = array();
 
-        while ($red = $rezultat->fetch_assoc()) {
+
+        while (
+            $red =
+            $rezultat->fetch_assoc()
+        ) {
 
             $jednaOprema =
                 new Oprema(
@@ -91,8 +115,10 @@ class ZaduzenjeKontroler
                 $jednaOprema;
         }
 
+
         return $oprema;
     }
+
 
     public function sacuvaj(
         $podaci,
@@ -103,31 +129,38 @@ class ZaduzenjeKontroler
                 $this->konekcija
             );
 
+
         try {
 
             $transakcija
                 ->zapocniTransakciju();
+
 
             $zaduzenje =
                 new Zaduzenje(
                     $this->konekcija
                 );
 
+
             $this->popuniZaduzenje(
                 $zaduzenje,
                 $podaci
             );
+
 
             $this->dodajStavke(
                 $zaduzenje,
                 $stavke
             );
 
+
             $id =
                 $zaduzenje->sacuvaj();
 
+
             $transakcija
                 ->potvrdiTransakciju();
+
 
             return $id;
 
@@ -140,6 +173,7 @@ class ZaduzenjeKontroler
         }
     }
 
+
     public function izmeni(
         $id,
         $podaci,
@@ -150,14 +184,17 @@ class ZaduzenjeKontroler
                 $this->konekcija
             );
 
+
         try {
 
             $transakcija
                 ->zapocniTransakciju();
 
+
             $zaduzenje =
                 $this->zaduzenje
                     ->pronadjiPoId($id);
+
 
             if (!$zaduzenje) {
                 throw new Exception(
@@ -165,17 +202,21 @@ class ZaduzenjeKontroler
                 );
             }
 
+
             $this->popuniZaduzenje(
                 $zaduzenje,
                 $podaci
             );
+
 
             $this->dodajStavke(
                 $zaduzenje,
                 $stavke
             );
 
+
             $zaduzenje->izmeni();
+
 
             $transakcija
                 ->potvrdiTransakciju();
@@ -188,6 +229,7 @@ class ZaduzenjeKontroler
             throw $e;
         }
     }
+
 
     private function popuniZaduzenje(
         Zaduzenje $zaduzenje,
@@ -214,6 +256,7 @@ class ZaduzenjeKontroler
         );
     }
 
+
     private function dodajStavke(
         Zaduzenje $zaduzenje,
         $stavke
@@ -227,50 +270,64 @@ class ZaduzenjeKontroler
                 continue;
             }
 
+
             $oprema =
                 new Oprema(
                     $this->konekcija
                 );
 
+
             $oprema->setIdOpreme(
                 (int)$podaci["id_opreme"]
             );
+
 
             $stavka =
                 new StavkaZaduzenja(
                     $this->konekcija
                 );
 
+
             if (isset($podaci["id_stavke"])) {
+
                 $stavka->setIdStavke(
                     (int)$podaci["id_stavke"]
                 );
             }
 
+
             $stavka->setKolicina(
                 (int)($podaci["kolicina"] ?? 1)
             );
+
 
             $stavka->setStanje(
                 $podaci["stanje"] ?? "Novo"
             );
 
+
             $stavka->setNapomena(
                 $podaci["napomena"] ?? ""
             );
 
-            $stavka->setOprema($oprema);
+
+            $stavka->setOprema(
+                $oprema
+            );
+
 
             $zaduzenje
                 ->dodajStavku($stavka);
         }
     }
 
+
     public function obrisi($id)
     {
         return $this->zaduzenje
             ->obrisi($id);
     }
+
 
     public function prikaziIzPogleda()
     {

@@ -49,11 +49,25 @@ if (
     $odeljenje === ""
 ) {
 
+    // Nema filtera
     $zaduzenja =
         $kontroler->prikaziSvaZaduzenja();
 
+} elseif (
+    $zaposleni !== "" &&
+    $brojZapisnika === "" &&
+    $odeljenje === ""
+) {
+
+    // Samo zaposleni - koristi stored proceduru
+    $zaduzenja =
+        $kontroler->pronadjiZaduzenjaProcedurom(
+            $zaposleni
+        );
+
 } else {
 
+    // Ostali filteri - postojeća pretraga
     $zaduzenja =
         $kontroler->pronadjiPoFilterima(
             $brojZapisnika,
